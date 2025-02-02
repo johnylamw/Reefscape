@@ -1,5 +1,14 @@
 """
 https://robotpy.readthedocs.io/projects/apriltag/en/latest/robotpy_apriltag.html
+https://pypi.org/project/photonlibpy/
+PORT TO PHOTONVISION LATER: https://docs.photonvision.org/en/latest/docs/programming/photonlib/index.html
+
+
+Steps:
+1. Get the pose of AT
+2. Find the 3D offsets of the AT -> reef branches
+3. Transform locations of reef branches via depth data -> camera frame 
+4. Detect if objects are "fixed" onto those branches
 """
 import cv2
 import numpy as np
