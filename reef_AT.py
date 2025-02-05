@@ -61,13 +61,14 @@ with open("rearleft.json") as PV_config:
     cx = cameraIntrinsics[2]
     cy = cameraIntrinsics[5]
 
-print(cx, cy, fx, fy)
+print("camera intrinsics: {cx, cy, fx, fy}:", cx, cy, fx, fy)
 
 # Tag Size: 165.1 mm = 0.1651 m
 config = AprilTagPoseEstimator.Config(tagSize=0.1651, fx=fx, fy=fy, cx=cx, cy=cy)
 estimator = AprilTagPoseEstimator(config)
 
 output = detector.detect(grayscale_image)
+print("output", output)
 for detections in output:
     print("ID", detections.getId())
     # Retrieve the corners of the AT detection
@@ -86,26 +87,23 @@ for detections in output:
     cv2.circle(image, (int(centerX), int(centerY)), 2, color=(0, 255, 255), thickness=3)
 
     # Get Tag Pose Information
-    tag_estimation = AprilTagPoseEstimator.estimate(estimator, detections)
-    tag_pose_estimation_matrix = tag_estimation.toMatrix() # 4x4 Affline Transformation
+    tag_pose_estimation = AprilTagPoseEstimator.estimate(estimator, detections)
+    tag_pose_estimation_matrix = tag_pose_estimation.toMatrix() # 4x4 Affline Transformation
     print(tag_pose_estimation_matrix)
 
     for offset_idx, offset_3d in enumerate(wpi_offsets_meters):
-        # Camera Frame to Branch
-        offset_vec = np.array([offset_3d[0], offset_3d[1], offset_3d[2], 1.0])
-        camera_to_branch = tag_pose_estimation_matrix @ offset_vec
+        # solve camera -> branch via camera -> tag and tag -> branch transformations
+        tag_to_reef_homography = np.append(offset_3d, 1.0) # ensures shape is 4x4
+        camera_to_reef = np.dot(tag_pose_estimation_matrix, tag_to_reef_homography)
+        
+        x_cam, y_cam, z_cam, _ = camera_to_reef
+        
+        # project the 3D point to 2D image coordinates:
+        u = (fx * x_cam / z_cam) + cx
+        v = (fy * y_cam / z_cam) + cy
 
-        cam_x = camera_to_branch[0]
-        cam_y = camera_to_branch[1]
-        cam_z = camera_to_branch[2]
+        cv2.circle(image, (int(u), int(v)), 5, (255, 255, 255), 2)
 
-        # Convert to Image Frame
-        u = fx * (cam_x / cam_z) + cx
-        v = fy * (cam_y / cam_z) + cy
-
-        print("(u, v) ", u, v)
-        cv2.circle(image, (int(u), int(v)), 5, (0, 0, 255), -1)
-    break
 
 while True:
     cv2.imshow("frame", image)
