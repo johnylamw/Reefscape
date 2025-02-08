@@ -65,11 +65,11 @@ with open("1280x800v1.json") as PV_config:
                   [0, 0, 1]], dtype=np.float32)
 
 
-    width = data["resolution"]["width"]
-    height = data["resolution"]["height"]
+    width = int(data["resolution"]["width"])
+    height = int(data["resolution"]["height"])
 
-    distCoeffs = np.array(data["distCoeffs"]["data"], dtype=np.float32)
-
+    distCoeffsSize = int(data["distCoeffs"]["cols"])
+    distCoeffs = np.array(data["distCoeffs"]["data"][0:distCoeffsSize], dtype=np.float32)
 
 # Start Capture and Calibrate Camera
 video_path = 4 # or do int 0 for /dev/video0
@@ -93,9 +93,8 @@ while cap.isOpened():
         break
 
     # TODO: Undistort image
-    #image = cv2.undistort(image, K, distCoeffs)   
+    image = cv2.undistort(image, K, distCoeffs)   
     grayscale_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-
 
     output = detector.detect(grayscale_image)
     for detections in output:
@@ -134,9 +133,6 @@ while cap.isOpened():
             cv2.circle(image, (int(u), int(v)), 5, (0, 255, 255), 2)
             cv2.putText(image, f"{offset_idx}", (int(u), int(v) + 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
         
-        cv2.imshow("detected", image)
-        cv2.waitKey(2000000)
-
     cv2.imshow("frame", image)
     if cv2.waitKey(1) & 0xFF == ord("q"):
         break
