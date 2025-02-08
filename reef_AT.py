@@ -115,14 +115,22 @@ while cap.isOpened():
         cv2.circle(image, (int(centerX), int(centerY)), 2, color=(0, 255, 255), thickness=3)
 
         # Get Tag Pose Information
-        tag_pose_estimation = AprilTagPoseEstimator.estimate(estimator, detections)
-        tag_pose_estimation_matrix = tag_pose_estimation.toMatrix() # 4x4 Affline Transformation
-        print(f"x: {tag_pose_estimation.x}, y: {tag_pose_estimation.y}, z: {tag_pose_estimation.z}")
+        #tag_pose_estimation = AprilTagPoseEstimator.estimate(estimator, detections)
+        tag_pose_estimation_orthogonal = AprilTagPoseEstimator.estimateOrthogonalIteration(estimator, detections, 500)
+
+        #tag_pose_estimation_matrix = tag_pose_estimation.toMatrix() # 4x4 Affline Transformation
+        tag_pose_estimation_orthogonal_pose1_matrix = tag_pose_estimation_orthogonal.pose1
+        tag_pose_estimation_orthogonal_pose2_matrix = tag_pose_estimation_orthogonal.pose2
+        #print(f"regular: x: {tag_pose_estimation.x}, y: {tag_pose_estimation.y}, z: {tag_pose_estimation.z}")
+        print(f"orthogonal pose 1: x: {tag_pose_estimation_orthogonal_pose1_matrix.x}, y: {tag_pose_estimation_orthogonal_pose1_matrix.y}, z: {tag_pose_estimation_orthogonal_pose1_matrix.z}")
+        #print(f"orthogonal pose 2: x: {tag_pose_estimation_orthogonal_pose2_matrix.x}, y: {tag_pose_estimation_orthogonal_pose2_matrix.y}, z: {tag_pose_estimation_orthogonal_pose2_matrix.z}")
+        #print("===============")
 
         for offset_idx, offset_3d in cad_to_branch_offset.items():
             # solve camera -> branch via camera -> tag and tag -> branch transformations
             tag_to_reef_homography = np.append(offset_3d, 1.0) # ensures shape is 4x4
-            camera_to_reef = np.dot(tag_pose_estimation_matrix, tag_to_reef_homography)
+            #camera_to_reef = np.dot(tag_pose_estimation_matrix, tag_to_reef_homography)
+            camera_to_reef = np.dot(tag_pose_estimation_orthogonal_pose1_matrix.toMatrix(), tag_to_reef_homography)
             
             x_cam, y_cam, z_cam, _ = camera_to_reef
             
