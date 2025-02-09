@@ -16,6 +16,7 @@ import numpy as np
 from robotpy_apriltag import \
     AprilTagField, AprilTagFieldLayout, AprilTagDetector, \
     AprilTagPoseEstimator
+
 from wpimath.geometry import Transform3d
 import json
 
@@ -30,6 +31,18 @@ detector.addFamily("tag36h11")
 
 # Measurement is in Inches
 
+# CAD to tip of the rod. (MAX Distance)
+cad_to_branch_offset = {
+    "L2-L" : np.array([-6.756, -19.707, 2.608]),
+    "L2-R" : np.array([6.754, -19.707, 2.563]),
+    "L3-L" : np.array([-6.639, -35.606, 2.628]),
+    "L3-R" : np.array([6.637, -35.606, 2.583]),
+    "L4-L" : np.array([-6.470, -58.4175, 0.921]), # NOT MODIFIED
+    "L4-R" : np.array([6.468, -58.4175, 0.876]) # NOT MODIFIED
+}
+
+# CAD to Center of Coral
+""""
 cad_to_branch_offset = {
     "L2-L" : np.array([-6.470, -12.854, 9.00]),
     "L2-R" : np.array([6.468, -12.833, 9.00]),
@@ -38,7 +51,7 @@ cad_to_branch_offset = {
     "L4-L" : np.array([-6.470, -58.4175, 0.921]),
     "L4-R" : np.array([6.468, -58.4175, 0.876])
 }
-
+"""
 ### Camera AT Coordinate System: 
 #   X is LEFT -> Right  [-inf, inf]
 #   Y is TOP -> Down    [-inf, inf]
@@ -72,7 +85,8 @@ with open("1280x800v1.json") as PV_config:
     distCoeffs = np.array(data["distCoeffs"]["data"][0:distCoeffsSize], dtype=np.float32)
 
 # Start Capture and Calibrate Camera
-video_path = 4 # or do int 0 for /dev/video0
+#video_path = "video/2.mkv" # or do int 0 for /dev/video0
+video_path = 4
 cap = cv2.VideoCapture(video_path) # /dev/video0
 cap.set(cv2.CAP_PROP_FRAME_WIDTH, width)
 cap.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
@@ -140,7 +154,8 @@ while cap.isOpened():
 
             cv2.circle(image, (int(u), int(v)), 5, (0, 255, 255), 2)
             cv2.putText(image, f"{offset_idx}", (int(u), int(v) + 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
+        break # skip the other detections after the 1st
         
     cv2.imshow("frame", image)
-    if cv2.waitKey(1) & 0xFF == ord("q"):
+    if cv2.waitKey(25) & 0xFF == ord("q"):
         break
