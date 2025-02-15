@@ -22,22 +22,6 @@ import json
 
 from ultralytics import YOLO
 
-def point_in_bounding_box(u, v, boxes):
-    for box in boxes:
-        x_center, y_center, width, height = box.tolist()
-
-        x_min = x_center - width / 2
-        y_min = y_center - height / 2
-        x_max = x_center + width / 2
-        y_max = y_center + height / 2
-
-        if x_min <= u <= x_max and y_min <= v <= y_max:
-            return True
-
-    return False
-
-    
-
 detector =  AprilTagDetector()
 detector.addFamily("tag36h11")
 
