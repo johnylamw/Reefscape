@@ -20,6 +20,24 @@ from robotpy_apriltag import \
 from wpimath.geometry import Transform3d
 import json
 
+from ultralytics import YOLO
+
+def point_in_bounding_box(u, v, boxes):
+    for box in boxes:
+        x_center, y_center, width, height = box.tolist()
+
+        x_min = x_center - width / 2
+        y_min = y_center - height / 2
+        x_max = x_center + width / 2
+        y_max = y_center + height / 2
+
+        if x_min <= u <= x_max and y_min <= v <= y_max:
+            return True
+
+    return False
+
+    
+
 detector =  AprilTagDetector()
 detector.addFamily("tag36h11")
 
@@ -64,7 +82,7 @@ for branch, offset in cad_to_branch_offset.items():
         offset[i] *= 0.0254
 
 # Obtain camera calibration data
-with open("1280x800v1.json") as PV_config:
+with open("./config/1280x800v1.json") as PV_config:
     data = json.load(PV_config)
 
     cameraIntrinsics = data["cameraIntrinsics"]["data"]
@@ -99,6 +117,9 @@ estimator = AprilTagPoseEstimator(config)
 
 
 frame_ct = -1
+
+model = YOLO("best-137.pt")
+
 while cap.isOpened():
     ret, image = cap.read()
     frame_ct += 1
@@ -106,9 +127,19 @@ while cap.isOpened():
     if not ret:
         break
 
-    # TODO: Undistort image
     image = cv2.undistort(image, K, distCoeffs)   
     grayscale_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+
+    # inferencing
+    results = model.predict(
+        image, show_boxes=True, conf=0.8, show=False, verbose=False
+    )
+
+    annotated_frame = results[0].plot()
+    boxes = results[0].boxes.xywh.cpu()
+    confs = results[0].boxes.conf.cpu()
+    ids = results[0].boxes.cls.cpu()
+    object_ct = 0
 
     output = detector.detect(grayscale_image)
     for detections in output:
@@ -126,8 +157,10 @@ while cap.isOpened():
         # Retrieve the center of the AT detection   
         centerX = detections.getCenter().x
         centerY = detections.getCenter().y
-        cv2.circle(image, (int(centerX), int(centerY)), 2, color=(0, 255, 255), thickness=3)
 
+        cv2.circle(image, (int(centerX), int(centerY)), 2, color=(0, 255, 255), thickness=3)
+       # cv2.circle(annotated_frame, (int(centerX), int(centerY)), 2, color=(0, 255, 255), thickness=3)
+        
         # Get Tag Pose Information
         #tag_pose_estimation = AprilTagPoseEstimator.estimate(estimator, detections)
         tag_pose_estimation_orthogonal = AprilTagPoseEstimator.estimateOrthogonalIteration(estimator, detections, 500)
@@ -154,8 +187,28 @@ while cap.isOpened():
 
             cv2.circle(image, (int(u), int(v)), 5, (0, 255, 255), 2)
             cv2.putText(image, f"{offset_idx}", (int(u), int(v) + 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
-        break # skip the other detections after the 1st
+
+          
+            for box in boxes:
+                x_center, y_center, width, height = box.tolist()
+
+                x_min = x_center - width / 2
+                y_min = y_center - height / 2
+                x_max = x_center + width / 2
+                y_max = y_center + height / 2
+                
+                print("id: ", offset_idx)
+                print("u", u, "v", v)
+                print("x_min", x_min, "x_max", x_max)
+                print("y_min", y_min, "y_max", y_max)
+                if (x_min <= u <= x_max) and (y_min <= v <= y_max):
+                    # In box
+                    print("IN BOUNDING BOXES")
+                    cv2.rectangle(image, (int(x_min), int(y_min)), (int(x_max), int(y_max)), (0, 255, 0), 2)
+                    # Consider removing that offset_idx from dictionary after a successful detection?
         
     cv2.imshow("frame", image)
+    cv2.imshow("annotated_frames", annotated_frame)
+    cv2.imshow("grayscale", grayscale_image)
     if cv2.waitKey(25) & 0xFF == ord("q"):
         break
