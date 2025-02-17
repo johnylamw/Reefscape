@@ -20,6 +20,7 @@ from robotpy_apriltag import \
 from wpimath.geometry import Transform3d
 import json
 
+from Reef import Reef, Alliance
 from ultralytics import YOLO
 
 detector =  AprilTagDetector()
@@ -99,10 +100,11 @@ print("camera intrinsics: {cx, cy, fx, fy}:", cx, cy, fx, fy)
 config = AprilTagPoseEstimator.Config(tagSize=0.1651, fx=fx, fy=fy, cx=cx, cy=cy)
 estimator = AprilTagPoseEstimator(config)
 
-
 frame_ct = -1
 
 model = YOLO("best-137.pt")
+
+reef = Reef(Alliance.BLUE)
 
 while cap.isOpened():
     ret, image = cap.read()
@@ -127,7 +129,8 @@ while cap.isOpened():
 
     output = detector.detect(grayscale_image)
     for detections in output:
-        print("ID", detections.getId(), "at frame count:", frame_ct)
+        detection_id = detections.getId()
+        print("ID", detection_id, "at frame count:", frame_ct)
         # Retrieve the corners of the AT detection
         points = []
         for corner in range(0, 4):
@@ -172,7 +175,6 @@ while cap.isOpened():
             cv2.circle(image, (int(u), int(v)), 5, (0, 255, 255), 2)
             cv2.putText(image, f"{offset_idx}", (int(u), int(v) + 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
 
-          
             for box in boxes:
                 x_center, y_center, width, height = box.tolist()
 
@@ -181,18 +183,33 @@ while cap.isOpened():
                 x_max = x_center + width / 2
                 y_max = y_center + height / 2
                 
-                print("id: ", offset_idx)
-                print("u", u, "v", v)
-                print("x_min", x_min, "x_max", x_max)
-                print("y_min", y_min, "y_max", y_max)
+                #print("id: ", offset_idx)
+                #print("u", u, "v", v)
+                #print("x_min", x_min, "x_max", x_max)
+                #print("y_min", y_min, "y_max", y_max)
                 if (x_min <= u <= x_max) and (y_min <= v <= y_max):
                     # In box
                     print("IN BOUNDING BOXES")
                     cv2.rectangle(image, (int(x_min), int(y_min)), (int(x_max), int(y_max)), (0, 255, 0), 2)
+                    
+                    level_str = offset_idx[0:2]
+                    direction_str = offset_idx[3:4]
+                    level = Reef.Level[level_str]
+
+                    # retrieve the branch:
+                    branches = reef.get_branches_at_tag(detection_id)
+                    branch_index = 0 if "L" in direction_str else 1
+                    branch = branches[branch_index]
+                    print(branches)
+                    print("direction_string", direction_str, "branch_index", branch_index, branch)
+                    reef.set_branch_state(branch, level, Reef.CoralState.ON)
                     # Consider removing that offset_idx from dictionary after a successful detection?
-        
-    cv2.imshow("frame", image)
-    cv2.imshow("annotated_frames", annotated_frame)
-    cv2.imshow("grayscale", grayscale_image)
+    
+    reconvert_grayscale = cv2.cvtColor(grayscale_image, cv2.COLOR_GRAY2BGR)
+    stacked_frames = cv2.hconcat([reconvert_grayscale, image, annotated_frame])
+    cv2.imshow("display", stacked_frames)
+    print("================================")
+    for branch, level in reef.get_branch_with_state(Reef.CoralState.ON):
+        print(branch, level)
     if cv2.waitKey(25) & 0xFF == ord("q"):
         break

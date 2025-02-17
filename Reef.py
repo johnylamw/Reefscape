@@ -13,7 +13,6 @@ class Direction(Enum):
     RIGHT = 1
 
 class Reef:
-
     class Branch(Enum):
         A = 0, "A"
         B = 1, "B"
@@ -28,14 +27,22 @@ class Reef:
         K = 10, "K"
         L = 11, "L"
 
+    class ReefFace(Enum):
+        # Indexes for ALLIANCE_TAGS
+        CLOSE = 0
+        CLOSE_LEFT = 2
+        CLOSE_RIGHT = 1
+        FAR = 2
+        FAR_LEFT = 3
+        FAR_RIGHT = 4
     class CoralState(Enum):
         OFF = 0
         ON = 1
     
     class Level(Enum):
-        L2 = 0
-        L3 = 1
-        L4 = 2
+        L2 = 0, "L2"
+        L3 = 1, "L3"
+        L4 = 2, "L4"
 
     global BLUE_ALLIANCE_TAGS
     global RED_ALLIANCE_TAGS 
@@ -43,6 +50,8 @@ class Reef:
 
     BLUE_ALLIANCE_TAGS = [18, 17, 22, 21, 20, 19]
     RED_ALLIANCE_TAGS = [7, 8, 9, 10, 11, 6]
+    REEF_FACE_NOTATION = ["CLOSE"]
+    
     BRANCHES = [branch for branch in Branch]
     # TAG INDEXES [A, B, C, D, E, F, G, H, I, J, K, L]
     
@@ -79,7 +88,7 @@ class Reef:
         for branch in BRANCHES:
             # Initialize L2, L3, L4
             self.branch_state.update({branch : {
-                self.Level.L2: self.CoralState.OFF,
+                self.Level.L2 : self.CoralState.OFF,
                 self.Level.L3 : self.CoralState.OFF,
                 self.Level.L4 : self.CoralState.OFF}})
     
@@ -101,7 +110,7 @@ class Reef:
         if id in self.alliance_tags:
            index = self.alliance_tags.index(id) * 2
            return BRANCHES[index:index+2]
-        return -1
+        return []
     
     # get_tag_from_branch("A") => 7
     def get_tag_from_branch(self, branch : chr):
@@ -112,9 +121,19 @@ class Reef:
     def set_branch_state(self, branch : Branch, level : Level, state : CoralState):
         self.branch_state[branch][level] = state
 
-    # get_branch_with_state(CoralState.ON) => [A, B, C] which contains CoralState.ON
+    # get_branch_with_state(CoralState.ON) => [A, B, C] which contains only CoralState.ON
     def get_branch_with_state(self, state : CoralState):
-        pass
+        lst = []
+        for branch, levels in self.branch_state.items():
+            for level, coral_state in levels.items():
+                if coral_state == state:
+                    lst.append((branch.name, level.name))
+        return lst
+
+    # returns the branch and their states at level level 
+    def get_branches_at_level_with_state(self, level: Level, state: CoralState):
+        return [branch.name for branch, levels in self.branch_state.items() if levels[level] == state]
+
 
     def printBranchList(self):
         print(BRANCHES)
@@ -122,6 +141,8 @@ class Reef:
 
 red = Reef(Alliance.RED)
 blue = Reef(Alliance.BLUE)
+
+print(blue.get_branches_at_tag(21))
 #print("=======RED======")
 #for x in range(6, 12):
 #    print(x, red.get_branches_at_tag(x))
@@ -137,7 +158,14 @@ blue = Reef(Alliance.BLUE)
 
     # robot.goToBranch(L1, l2)
     # goToReefBranch(A = Branch, L1 = Level)
+"""
+print(red.get_branch_state_at(Reef.Branch.A, Reef.Level.L2))
+red.set_branch_state(Reef.Branch.A, Reef.Level.L2, Reef.CoralState.ON)
+print(red.get_branch_state_at(Reef.Branch.A, Reef.Level.L2))
+print(red.get_all_states())
+print("CORALS ON", red.get_branch_with_state(Reef.CoralState.ON))
+print("CORALS OFF", red.get_branch_with_state(Reef.CoralState.OFF))
+print("=====================")
 
-print(red.get_branch_state_at(Reef.Branch.A, Reef.Level.L2))
-red.set_branch_state(Reef.Branch.A, Reef.Level.L2, Reef.CoralState.OFF)
-print(red.get_branch_state_at(Reef.Branch.A, Reef.Level.L2))
+print(red.get_branches_at_level_with_state(Reef.Level.L2, Reef.CoralState.OFF))
+"""
