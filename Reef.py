@@ -30,7 +30,7 @@ class Reef:
     class ReefFace(Enum):
         # Indexes for ALLIANCE_TAGS
         CLOSE = 0
-        CLOSE_LEFT = 2
+        CLOSE_LEFT = 5
         CLOSE_RIGHT = 1
         FAR = 2
         FAR_LEFT = 3
@@ -129,7 +129,15 @@ class Reef:
                 if coral_state == state:
                     lst.append((branch.name, level.name))
         return lst
-
+    
+    # id : 6 => ReefFace.CLOSE_LEFT
+    def get_tag_to_ReefFace(self, tag_id : int):
+        index = self.alliance_tags.index(tag_id)
+        return self.ReefFace(index)
+    
+    def get_ReefFace_to_tag(self, reef_face : ReefFace):
+        return self.alliance_tags[reef_face.value]
+    
     # returns the branch and their states at level level 
     def get_branches_at_level_with_state(self, level: Level, state: CoralState):
         return [branch.name for branch, levels in self.branch_state.items() if levels[level] == state]
@@ -142,10 +150,13 @@ class Reef:
 red = Reef(Alliance.RED)
 blue = Reef(Alliance.BLUE)
 
-print(blue.get_branches_at_tag(21))
+
 #print("=======RED======")
-#for x in range(6, 12):
-#    print(x, red.get_branches_at_tag(x))
+"""
+for x in range(6, 12):
+    print(x, red.get_tag_to_ReefFace(x))
+"""
+# print(red.get_ReefFace_to_tag(Reef.ReefFace.FAR_LEFT))
 
 #print("=======BLUE======")
 #for x in range(17, 22):
