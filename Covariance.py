@@ -1,10 +1,11 @@
 import pandas as pd
 import argparse
+import numpy as np
 parser = argparse.ArgumentParser(
     prog="AdvantageScope Covariance",
     description="Calculates a Covariance Matrix via Advantage Scope output data"
 )
-parser.add_argument("csv_files")
+parser.add_argument("filename")
 
 # Define groups with their respective prefixes, systems, values, and abbreviations.
 groups = [
@@ -88,6 +89,10 @@ def compute_covariance_matrix(csv_file):
     
     # Compute the covariance matrix
     cov_matrix = df_subset.cov()
+
+    # Filtering (for readability)
+    threshold = 1e-4
+    cov_matrix[np.abs(cov_matrix) < threshold] = 0
     
     print("\nCovariance Matrix:")
     print(cov_matrix)
