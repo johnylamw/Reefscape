@@ -44,7 +44,7 @@ groups = [
         "systems": [
             "targetPose"
         ],
-        "values": ["", "rotation/q/w", "rotation/q/x", "rotation/q/y", "rotation/q/z", "translation/x", "translation/y", "translation/z"],
+        "values": ["rotation/q/w", "rotation/q/x", "rotation/q/y", "rotation/q/z", "translation/x", "translation/y", "translation/z"],
         "abbr": {
             "targetPose": "TP"
         }
@@ -64,7 +64,9 @@ def compute_covariance_matrix(csv_file):
             for value in values:
                 full_col = f"{base_prefix}/{system}/{value}"
                 # Use the abbreviation plus the last part of the value (e.g., "value", "x", "y") for the short key.
-                short_key = f"{abbr[system]}_{value.split('/')[-1]}"
+                #short_key = f"{abbr[system]}_{value.split('/')[-1]}"
+                #short_key = f"{abbr[system]}_{value.split('/')[-2]}_{value.split('/')[-1]}"
+                short_key = f"{abbr[system]}_{value}"
                 column_dictionary[short_key] = full_col
 
     # Attempt to open the CSV file
